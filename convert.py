@@ -3,7 +3,7 @@ import random
 
 # pd.options.display.max_rows = 1000000
 
-datasets = ['electronic', 'food', 'clothing']
+datasets = ['steam']
 filenames = ['user_bundle']
 
 # for dataset in datasets:
