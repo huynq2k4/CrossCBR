@@ -274,6 +274,9 @@ def export_prediction(model, dataloader, conf, topk=20):
         col_indice = col_indice + 1
         data_pred.update({cnt + i: col_indice[i].tolist() for i in range(col_indice.shape[0])})
         data_truth.update({cnt + i: torch.nonzero(ground_truth_u_b[i]).squeeze().tolist() for i in range(ground_truth_u_b.shape[0])})
+        for user_id in data_truth:
+            if type(data_truth[user_id]) != list:
+                data_truth[user_id] = [data_truth[user_id]]
         cnt += col_indice.shape[0]
     return data_pred, data_truth
 
