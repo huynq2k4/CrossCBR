@@ -1,4 +1,4 @@
-from metrics import *
+from accuracy_metrics import *
 import pandas as pd
 import json
 import argparse
@@ -28,97 +28,45 @@ def convert_to_item_cate_matrix(group_item):
     return item_cate_matrix
 
 def get_repeat_eval(pred_folder, dataset, size, number_list, file, threshold):
-    history_file = f'csvdata/{dataset}/{dataset}_train.csv'
-    truth_file = f'jsondata/{dataset}_future.json'
+    dir = os.path.dirname(__file__)
+
+    truth_file = f'{dir}/datasets/{dataset}/{dataset}_future.json'
+
     with open(truth_file, 'r') as f:
         data_truth = json.load(f)
-    data_history = pd.read_csv(history_file)
+
     a_ndcg = []
     a_recall = []
-    a_hit = []
-    a_repeat_ratio = []
-    a_explore_ratio = []
-    #below
-    a_recall_repeat = []
-    a_recall_explore = []
-    a_hit_repeat = []
-    a_hit_explore = []
 
     
-    keyset_file = f'keyset/{dataset}_keyset.json'
-    pred_file = f'{pred_folder}/{dataset}_pred_{threshold}.json'
+    pred_file = f'{dir}/datasets/{dataset}/{dataset}_pred.json'
 
-    with open(keyset_file, 'r') as f:
-        keyset = json.load(f)
     with open(pred_file, 'r') as f:
         data_pred = json.load(f)
     
     ndcg = []
     recall = []
-    hit = []
-    repeat_ratio = []
-    explore_ratio = []
-    #below
-    recall_repeat = []
-    recall_explore = []
-    hit_repeat = []
-    hit_explore = []
 
-    for user in keyset['test']: 
-        pred = data_pred[user]
-        truth = data_truth[user][1]
-        # print(user)
-        user_history = data_history[data_history['user_id'].isin([int(user)])]
-        repeat_items = list(set(user_history['item_id']))
-        truth_repeat = list(set(truth)&set(repeat_items)) # might be none
-        truth_explore = list(set(truth)-set(truth_repeat)) # might be none
+    for user in data_truth:
+        if len(data_truth[user]) != 0:
+            pred = data_pred[user]
+            truth = data_truth[user][1]
 
-        u_ndcg = get_NDCG(truth, pred, size)
-        ndcg.append(u_ndcg)
-        u_recall = get_Recall(truth, pred, size)
-        recall.append(u_recall)
-        u_hit = get_HT(truth, pred, size)
-        hit.append(u_hit)
+            u_ndcg = get_NDCG(truth, pred, size)
+            ndcg.append(u_ndcg)
+            u_recall = get_Recall(truth, pred, size)
+            recall.append(u_recall)
 
-        u_repeat_ratio, u_explore_ratio = get_repeat_explore(repeat_items, pred, size)# here repeat items
-        repeat_ratio.append(u_repeat_ratio)
-        explore_ratio.append(u_explore_ratio)
 
-        if len(truth_repeat)>0:
-            u_recall_repeat = get_Recall(truth_repeat, pred, size)# here repeat truth, since repeat items might not in the groundtruth
-            recall_repeat.append(u_recall_repeat)
-            u_hit_repeat = get_HT(truth_repeat, pred, size)
-            hit_repeat.append(u_hit_repeat)
-
-        if len(truth_explore)>0:
-            u_recall_explore = get_Recall(truth_explore, pred, size)
-            u_hit_explore = get_HT(truth_explore, pred, size)
-            recall_explore.append(u_recall_explore)
-            hit_explore.append(u_hit_explore)
     
     a_ndcg.append(np.mean(ndcg))
     a_recall.append(np.mean(recall))
-    a_hit.append(np.mean(hit))
-    a_repeat_ratio.append(np.mean(repeat_ratio))
-    a_explore_ratio.append(np.mean(explore_ratio))
-    a_recall_repeat.append(np.mean(recall_repeat))
-    a_recall_explore.append(np.mean(recall_explore))
-    a_hit_repeat.append(np.mean(hit_repeat))
-    a_hit_explore.append(np.mean(hit_explore))
 
    
 
-    file.write('basket size: ' + str(size) + '\n')
+    # file.write('basket size: ' + str(size) + '\n')
     file.write('recall: '+ str([round(num, 4) for num in a_recall]) +' '+ str(round(np.mean(a_recall), 4)) +' '+ str(round(np.std(a_recall) / np.sqrt(len(a_recall)), 4)) +'\n')
     file.write('ndcg: '+ str([round(num, 4) for num in a_ndcg]) +' '+ str(round(np.mean(a_ndcg), 4)) +' '+ str(round(np.std(a_ndcg) / np.sqrt(len(a_ndcg)), 4)) +'\n')
-    file.write('hit: '+ str([round(num, 4) for num in a_hit]) +' '+ str(round(np.mean(a_hit), 4)) +' '+ str(round(np.std(a_hit) / np.sqrt(len(a_hit)), 4)) +'\n')
-    
-    file.write('repeat ratio: '+ str([round(num, 4) for num in a_repeat_ratio]) +' '+ str(round(np.mean(a_repeat_ratio), 4)) +' '+ str(round(np.std(a_repeat_ratio) / np.sqrt(len(a_repeat_ratio)), 4)) +'\n')
-    file.write('explore ratio: '+ str([round(num, 4) for num in a_explore_ratio]) +' '+ str(round(np.mean(a_explore_ratio), 4)) +' '+ str(round(np.std(a_explore_ratio) / np.sqrt(len(a_explore_ratio)), 4)) +'\n')
-    file.write('repeat recall: '+ str([round(num, 4) for num in a_recall_repeat]) +' '+ str(round(np.mean(a_recall_repeat), 4)) +' '+ str(round(np.std(a_recall_repeat) / np.sqrt(len(a_recall_repeat)), 4)) +'\n')
-    file.write('explore recall: '+ str([round(num, 4) for num in a_recall_explore]) +' '+ str(round(np.mean(a_recall_explore), 4)) +' '+ str(round(np.std(a_recall_explore) / np.sqrt(len(a_recall_explore)), 4)) +'\n')
-    file.write('repeat hit: '+ str([round(num, 4) for num in a_hit_repeat]) +' '+ str(round(np.mean(a_hit_repeat), 4)) +' '+ str(round(np.std(a_hit_repeat) / np.sqrt(len(a_hit_repeat)), 4)) +'\n')
-    file.write('explore hit: '+ str([round(num, 4) for num in a_hit_explore]) +' '+ str(round(np.mean(a_hit_explore), 4)) +' '+ str(round(np.std(a_hit_explore) / np.sqrt(len(a_hit_explore)), 4)) +'\n')
 
 
     return np.mean(a_recall)
@@ -270,7 +218,7 @@ def beyond_acc(dataset):
     
 
     f.write('-------------'+dataset+'-------------- \n')
-    # get_repeat_eval(pred_folder, dataset, 20, number_list, f, threshold)
+    get_repeat_eval(pred_folder, dataset, 20, number_list, f, threshold)
     get_eval_input(pred_folder, dataset, number_list, 20, f, threshold, pweight='default')
     # eval_diversity(pred_folder, dataset, number_list, 20, f, threshold)
 
