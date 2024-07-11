@@ -46,7 +46,7 @@ def np_edge_dropout(values, dropout_ratio):
 
 
 class CrossCBR(nn.Module):
-    def __init__(self, conf, raw_graph):
+    def __init__(self, conf, raw_graph, bundle_pop):
         super().__init__()
         self.conf = conf
         device = self.conf["device"]
@@ -62,6 +62,7 @@ class CrossCBR(nn.Module):
 
         assert isinstance(raw_graph, list)
         self.ub_graph, self.ui_graph, self.bi_graph = raw_graph
+        self.bundle_pop = bundle_pop
 
         # generate the graph without any dropouts for testing
         self.get_item_level_graph_ori()
@@ -254,6 +255,8 @@ class CrossCBR(nn.Module):
         c_losses = [u_cross_view_cl, b_cross_view_cl]
 
         c_loss = sum(c_losses) / len(c_losses)
+
+        
 
         return bpr_loss, c_loss
 

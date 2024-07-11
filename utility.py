@@ -3,6 +3,7 @@
 
 import os
 import random
+import json
 import numpy as np
 import scipy.sparse as sp 
 
@@ -100,6 +101,8 @@ class Datasets():
 
         self.graphs = [u_b_graph_train, u_i_graph, b_i_graph]
 
+        self.bundle_popularity = self.get_bundle_pop()
+
         self.train_loader = DataLoader(self.bundle_train_data, batch_size=batch_size_train, shuffle=True, num_workers=10, drop_last=True)
         self.val_loader = DataLoader(self.bundle_val_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
         self.test_loader = DataLoader(self.bundle_test_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
@@ -167,3 +170,20 @@ class Datasets():
         print_statistics(u_b_graph, "U-B statistics in %s" %(task))
 
         return u_b_pairs, u_b_graph
+    
+    def get_bundle_pop(self):
+        with open(os.path.join(self.path, self.name, 'bundle_popularity.json'), 'r') as f:
+            bundle_pop = json.load(f)
+        
+        pop_val = 1.0 / len(bundle_pop['pop'])
+        unpop_val = -1.0 / len(bundle_pop['unpop'])
+
+        pop_vec = np.full(self.num_bundles, 0)
+
+        for bundle in bundle_pop['pop']:
+            pop_vec[int(bundle)] = pop_val
+
+        for bundle in bundle_pop['unpop']:
+            pop_vec[int(bundle)] = unpop_val
+        
+        return pop_vec
