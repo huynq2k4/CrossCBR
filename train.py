@@ -273,7 +273,7 @@ def export_prediction(model, dataloader, conf, topk=20):
         _, col_indice = torch.topk(pred_b, topk)
         col_indice = col_indice + 1
         data_pred.update({cnt + i: col_indice[i].tolist() for i in range(col_indice.shape[0])})
-        data_truth.update({cnt + i: [torch.nonzero(ground_truth_u_b[i]).squeeze().tolist()] for i in range(ground_truth_u_b.shape[0])})
+        data_truth.update({cnt + i: torch.nonzero(ground_truth_u_b[i]).squeeze().tolist() for i in range(ground_truth_u_b.shape[0])})
         cnt += col_indice.shape[0]
     return data_pred, data_truth
 
