@@ -27,7 +27,7 @@ def convert_to_item_cate_matrix(group_item):
 
     return item_cate_matrix
 
-def get_repeat_eval(pred_folder, dataset, size, number_list, file, threshold):
+def get_repeat_eval(dataset, size, file):
     dir = os.path.dirname(__file__)
 
     truth_file = f'{dir}/datasets/{dataset}/{dataset}_future.json'
@@ -50,8 +50,7 @@ def get_repeat_eval(pred_folder, dataset, size, number_list, file, threshold):
     for user in data_truth:
         if len(data_truth[user]) != 0:
             pred = data_pred[user]
-            truth = data_truth[user][1]
-
+            truth = data_truth[user]
             u_ndcg = get_NDCG(truth, pred, size)
             ndcg.append(u_ndcg)
             u_recall = get_Recall(truth, pred, size)
@@ -64,7 +63,7 @@ def get_repeat_eval(pred_folder, dataset, size, number_list, file, threshold):
 
    
 
-    # file.write('basket size: ' + str(size) + '\n')
+    file.write('list size: ' + str(size) + '\n')
     file.write('recall: '+ str([round(num, 4) for num in a_recall]) +' '+ str(round(np.mean(a_recall), 4)) +' '+ str(round(np.std(a_recall) / np.sqrt(len(a_recall)), 4)) +'\n')
     file.write('ndcg: '+ str([round(num, 4) for num in a_ndcg]) +' '+ str(round(np.mean(a_ndcg), 4)) +' '+ str(round(np.std(a_ndcg) / np.sqrt(len(a_ndcg)), 4)) +'\n')
 
@@ -72,7 +71,7 @@ def get_repeat_eval(pred_folder, dataset, size, number_list, file, threshold):
     return np.mean(a_recall)
 
 
-def get_eval_input(pred_folder, dataset, number_list, size, file, threshold, pweight): 
+def get_eval_input(dataset, size, file, pweight): 
     dir = os.path.dirname(__file__)
     group_file = f'{dir}/datasets/{dataset}/bundle_popularity.json'
     with open(group_file, 'r') as f:
@@ -143,7 +142,7 @@ def get_eval_input(pred_folder, dataset, number_list, size, file, threshold, pwe
     EUR.append(default_results['logEUR'])          
     RUR.append(default_results['logRUR'])      
 
-    #file.write('basket size: ' + str(size) + '\n')
+    file.write('list size: ' + str(size) + '\n')
 
     file.write('EEL: ' + str([round(num, 4) for num in EEL]) +' '+ str(round(np.mean(EEL), 4)) +' '+ str(round(np.std(EEL) / np.sqrt(len(EEL)), 4)) +'\n')
     file.write('EED: ' + str([round(num, 4) for num in EED]) +' '+ str(round(np.mean(EED), 4)) +' '+ str(round(np.std(EED) / np.sqrt(len(EED)), 4)) +'\n')
@@ -156,7 +155,7 @@ def get_eval_input(pred_folder, dataset, number_list, size, file, threshold, pwe
     return EEL
  
 
-def eval_diversity(pred_folder, dataset, number_list, size, file, threshold): #evaluate diversity
+def eval_diversity(dataset, size, file): #evaluate diversity
     dir = os.path.dirname(__file__)
     group_file = f'{dir}/datasets/{dataset}/{dataset}_group_purchase_category.json'
     with open(group_file, 'r') as f:
@@ -206,25 +205,21 @@ def eval_diversity(pred_folder, dataset, number_list, size, file, threshold): #e
     return ILD
  
 
-def beyond_acc(dataset):
+def beyond_acc(dataset, topk, method_name):
 
-    pred_folder = 'final_results_fair'
-    number_list = 0
-    method_name = 'CrossCBR'
-    threshold = 0.5
     dir = os.path.dirname(__file__)
     eval_file = f'{dir}/datasets/{dataset}/eval_{method_name}.txt'
     f = open(eval_file, 'w')
     
 
     f.write('-------------'+dataset+'-------------- \n')
-    get_repeat_eval(pred_folder, dataset, 20, number_list, f, threshold)
-    get_eval_input(pred_folder, dataset, number_list, 20, f, threshold, pweight='default')
+    for k in topk:
+        get_repeat_eval(dataset, k, f)
+        get_eval_input(dataset, k, f, pweight='default')
     # eval_diversity(pred_folder, dataset, number_list, 20, f, threshold)
 
-    # get_repeat_eval(pred_folder, dataset, 20, number_list, f, threshold)
-    # get_eval_input(pred_folder, dataset, number_list, 20, f, threshold, pweight='default')
-    # eval_diversity(pred_folder, dataset, number_list, 20, f, threshold)
 
+if __name__ == '__main__':
+    beyond_acc('Youshu', 20, 'CrossCBR')
 
 

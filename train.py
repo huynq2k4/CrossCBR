@@ -161,7 +161,8 @@ def main():
     with open(f'datasets/{dataset_name}/{dataset_name}_future.json', 'w') as json_file:
         json.dump(data_truth, json_file)
 
-    beyond_acc(dataset=dataset_name)
+
+    beyond_acc(dataset_name, conf['topk'], conf['model'])
 
 
 
@@ -260,18 +261,18 @@ def test(model, dataloader, conf):
 
     return metrics
 
-def export_prediction(model, dataloader, conf, topk=20):
+def export_prediction(model, dataloader, conf):
     cnt = 0
     data_pred = {}
     data_truth = {}
     device = conf["device"]
     model.eval()
     rs = model.propagate()
+    topk = max(conf['topk'])
     for users, ground_truth_u_b, train_mask_u_b in dataloader:
         pred_b = model.evaluate(rs, users.to(device))
         pred_b -= 1e8 * train_mask_u_b.to(device)
         _, col_indice = torch.topk(pred_b, topk)
-        col_indice = col_indice + 1
         data_pred.update({cnt + i: col_indice[i].tolist() for i in range(col_indice.shape[0])})
         data_truth.update({cnt + i: torch.nonzero(ground_truth_u_b[i]).squeeze().tolist() for i in range(ground_truth_u_b.shape[0])})
         for user_id in data_truth:
@@ -309,6 +310,7 @@ def get_recall(pred, grd, is_hit, topk):
     # remove those test cases who don't have any positive items
     denorm = pred.shape[0] - (num_pos == 0).sum().item()
     nomina = (hit_cnt/(num_pos+epsilon)).sum().item()
+    
 
     return [nomina, denorm]
 
