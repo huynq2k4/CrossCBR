@@ -151,16 +151,15 @@ def main():
                 if (batch_anchor+1) % test_interval_bs == 0:  
                     metrics = {}
                     metrics["val"] = test(model, dataset.val_loader, conf)
-                    metrics["test"] = test(model, dataset.test_loader, conf)
+                    if epoch != conf['epochs'] - 1:
+                        metrics["test"] = test(model, dataset.test_loader, conf)
+                    else:
+                        metrics["test"], data_pred, data_truth = test(model, dataset.test_loader, conf, export=True)
+                        with open(f'datasets/{dataset_name}/{dataset_name}_pred.json', 'w') as json_file:
+                            json.dump(data_pred, json_file)
+                        with open(f'datasets/{dataset_name}/{dataset_name}_future.json', 'w') as json_file:
+                            json.dump(data_truth, json_file)
                     best_metrics, best_perform, best_epoch = log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, checkpoint_conf_path, epoch, batch_anchor, best_metrics, best_perform, best_epoch)
-
-    data_pred, data_truth = export_prediction(model, dataset.test_loader, conf)
-    
-    with open(f'datasets/{dataset_name}/{dataset_name}_pred.json', 'w') as json_file:
-        json.dump(data_pred, json_file)
-    with open(f'datasets/{dataset_name}/{dataset_name}_future.json', 'w') as json_file:
-        json.dump(data_truth, json_file)
-
 
     beyond_acc(dataset_name, conf['topk'], conf['model'])
 
@@ -238,7 +237,7 @@ def log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, chec
     return best_metrics, best_perform, best_epoch
 
 
-def test(model, dataloader, conf):
+def test(model, dataloader, conf, export=False):
     tmp_metrics = {}
     for m in ["recall", "ndcg"]:
         tmp_metrics[m] = {}
@@ -248,38 +247,41 @@ def test(model, dataloader, conf):
     device = conf["device"]
     model.eval()
     rs = model.propagate(test=True)
-    for users, ground_truth_u_b, train_mask_u_b in dataloader:
-        pred_b = model.evaluate(rs, users.to(device))
-        pred_b -= 1e8 * train_mask_u_b.to(device)
-        tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
+    if not export:
+        for users, ground_truth_u_b, train_mask_u_b in dataloader:
+            pred_b = model.evaluate(rs, users.to(device))
+            pred_b -= 1e8 * train_mask_u_b.to(device)
+            tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
+        metrics = {}
+        for m, topk_res in tmp_metrics.items():
+            metrics[m] = {}
+            for topk, res in topk_res.items():
+                metrics[m][topk] = res[0] / res[1]
 
-    metrics = {}
-    for m, topk_res in tmp_metrics.items():
-        metrics[m] = {}
-        for topk, res in topk_res.items():
-            metrics[m][topk] = res[0] / res[1]
+        return metrics
+    else:
+        data_pred = {}
+        data_truth = {}
+        cnt = 0
+        for users, ground_truth_u_b, train_mask_u_b in dataloader:
+            pred_b = model.evaluate(rs, users.to(device))
+            pred_b -= 1e8 * train_mask_u_b.to(device)
+            tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
+            _, col_indice = torch.topk(pred_b, topk)
+            data_pred.update({cnt + i: col_indice[i].tolist() for i in range(col_indice.shape[0])})
+            data_truth.update({cnt + i: torch.nonzero(ground_truth_u_b[i]).squeeze().tolist() for i in range(ground_truth_u_b.shape[0])})
+            for user_id in data_truth:
+                if type(data_truth[user_id]) != list:
+                    data_truth[user_id] = [data_truth[user_id]]
+            cnt += col_indice.shape[0]
 
-    return metrics
+        metrics = {}
+        for m, topk_res in tmp_metrics.items():
+            metrics[m] = {}
+            for topk, res in topk_res.items():
+                metrics[m][topk] = res[0] / res[1]
 
-def export_prediction(model, dataloader, conf):
-    cnt = 0
-    data_pred = {}
-    data_truth = {}
-    device = conf["device"]
-    model.eval()
-    rs = model.propagate()
-    topk = max(conf['topk'])
-    for users, ground_truth_u_b, train_mask_u_b in dataloader:
-        pred_b = model.evaluate(rs, users.to(device))
-        pred_b -= 1e8 * train_mask_u_b.to(device)
-        _, col_indice = torch.topk(pred_b, topk)
-        data_pred.update({cnt + i: col_indice[i].tolist() for i in range(col_indice.shape[0])})
-        data_truth.update({cnt + i: torch.nonzero(ground_truth_u_b[i]).squeeze().tolist() for i in range(ground_truth_u_b.shape[0])})
-        for user_id in data_truth:
-            if type(data_truth[user_id]) != list:
-                data_truth[user_id] = [data_truth[user_id]]
-        cnt += col_indice.shape[0]
-    return data_pred, data_truth
+        return metrics, data_pred, data_truth
 
 
 def get_metrics(metrics, grd, pred, topks):
@@ -298,7 +300,7 @@ def get_metrics(metrics, grd, pred, topks):
         for topk, res in topk_res.items():
             for i, x in enumerate(res):
                 metrics[m][topk][i] += x
-
+                
     return metrics
 
 
@@ -310,7 +312,6 @@ def get_recall(pred, grd, is_hit, topk):
     # remove those test cases who don't have any positive items
     denorm = pred.shape[0] - (num_pos == 0).sum().item()
     nomina = (hit_cnt/(num_pos+epsilon)).sum().item()
-    
 
     return [nomina, denorm]
 
