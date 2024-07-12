@@ -150,3 +150,101 @@ food:
   epochs: 150
   test_interval: 5
 
+clo:
+  data_path: './datasets'
+  batch_size_train: 1024
+  batch_size_test: 1024
+  topk: [1, 3, 5, 10, 20, 40]
+  neg_num: 1
+
+  # the following are the best settings
+  aug_type: "ED"
+  ed_interval: 1
+  embedding_sizes: [64]
+  num_layerss: [1]
+  lrs: [1.0e-3]
+  item_level_ratios: [0.2]
+  bundle_level_ratios: [0.2]
+  bundle_agg_ratios: [0.2]
+  l2_regs: [1.0e-4]
+
+  c_lambdas: [0.04]
+  c_temps: [0.25]
+
+  epochs: 150
+  test_interval: 5
+
+
+elec:
+  data_path: './datasets'
+  batch_size_train: 1024
+  batch_size_test: 1024
+  topk: [1, 3, 5, 10, 20, 40]
+  neg_num: 1
+
+  # the following are the best settings
+  aug_type: "ED"
+  ed_interval: 1
+  embedding_sizes: [64]
+  num_layerss: [1]
+  lrs: [1.0e-3]
+  item_level_ratios: [0.2]
+  bundle_level_ratios: [0.2]
+  bundle_agg_ratios: [0.2]
+  l2_regs: [1.0e-4]
+
+  c_lambdas: [0.04]
+  c_temps: [0.25]
+
+  epochs: 150
+  test_interval: 5
+
+
+foo:
+  data_path: './datasets'
+  batch_size_train: 1024
+  batch_size_test: 1024
+  topk: [1, 3, 5, 10, 20, 40]
+  neg_num: 1
+
+  # the following are the best settings
+  aug_type: "ED"
+  ed_interval: 1
+  embedding_sizes: [64]
+  num_layerss: [1]
+  lrs: [1.0e-3]
+  item_level_ratios: [0.2]
+  bundle_level_ratios: [0.2]
+  bundle_agg_ratios: [0.2]
+  l2_regs: [1.0e-4]
+
+  c_lambdas: [0.04]
+  c_temps: [0.25]
+
+  epochs: 150
+  test_interval: 5
+
+steam:
+  data_path: './datasets'
+  batch_size_train: 1024
+  batch_size_test: 1024
+  topk: [1, 3, 5, 10, 20, 40]
+  neg_num: 1
+
+  # the following are the best settings
+  aug_type: "ED"
+  ed_interval: 1
+  embedding_sizes: [64]
+  num_layerss: [1]
+  lrs: [1.0e-3]
+  item_level_ratios: [0.2]
+  bundle_level_ratios: [0.2]
+  bundle_agg_ratios: [0.2]
+  l2_regs: [1.0e-4]
+
+  c_lambdas: [0.04]
+  c_temps: [0.25]
+
+  epochs: 150
+  test_interval: 5
+
